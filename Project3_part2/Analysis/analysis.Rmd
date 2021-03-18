@@ -1,0 +1,94 @@
+---
+title: "analysis"
+author: "Eunice Zhang $ Ziyi Li"
+date: "3/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(randomForest)
+```
+
+
+```{r}
+# load data
+setwd("~/Desktop/STAT302/project/project3/Project3_part2/Data")
+my_penguins <- read.csv("my_penguins.csv")
+my_gapminder <- read.csv("my_gapminder.csv")
+
+# source data
+source("../code/my_rf_cv.R")
+
+
+# compute CV estimated MSE when k = 2
+MSE_2 <- data.frame()
+for(i in 1:30) {
+  result_2 <- my_rf_cv(k = 2)
+  MSE_2[i,1] <- unlist(result_2)
+}
+colnames(MSE_2) <- c("MSE")
+rownames(MSE_2) <- seq(1,30)
+
+
+#Calculate CV estimated MSE when k = 5
+MSE_5 <- data.frame()
+for(i in 1:30) {
+  result_5 <- my_rf_cv(k = 5)
+  MSE_5[i,1] <- unlist(result_5)
+}
+colnames(MSE_5) <- c("MSE")
+rownames(MSE_5) <- seq(1,30)
+
+
+#Calculate CV estimated MSE when k = 10
+MSE_10 <- data.frame()
+for(i in 1:30) {
+  result_10 <- my_rf_cv(k = 10)
+  MSE_10[i,1] <- unlist(result_10)
+}
+colnames(MSE_10) <- c("MSE")
+rownames(MSE_10) <- seq(1,30)
+
+```
+
+
+```{r}
+# plot the boxplot when k= 2, 5, and 10
+folds <- rep(c(2, 5, 10), each = 30) %>% as.factor()
+all_k <- rbind(MSE_2, MSE_5, MSE_10)
+df <- data.frame(all_k, folds)
+
+boxplot_cv <- ggplot(data = df,aes(x = unlist(folds),y = unlist(all_k),group = unlist(folds),fill = folds)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(x = "Folds", y = "MSE", title = "CV estimated MSE with k=2,5,10")
+  theme(plot.title = element_text(hjust = 0.5))
+boxplot_cv 
+
+ggsave("boxplot_cv", boxplot_cv, pdf, "../Output/Figures")
+```
+
+```{r}
+# calculate the average of CV estimates 
+avg2 <- mean(as.numeric(MSE_2[,1]))
+avg5 <- mean(as.numeric(MSE_5[,1]))
+avg10 <- mean(as.numeric(MSE_10[,1]))
+
+# calculate the sd of CV estimates
+sd2 <- sd(as.numeric(MSE_2[,1]))
+sd5 <- sd(as.numeric(MSE_5[,1]))
+sd10 <- sd(as.numeric(MSE_10[,1]))
+
+cv_table <- data.frame("k value" = c(2, 5, 10), "Average" = c(avg2,avg5,avg10), "Standard Deviation" = c(sd2,sd5,sd10))
+cv_table
+
+# save RDS version og summary stat
+saveRDS(cv_table, '../Output/Results/cv_table.rds')
+
+# simulation results
+simulation_result <- cbind(MSE_2,MSE_5,MSE_10)
+write_csv(simulation_result, '../Output/Results/simulation_result.csv')
+```
+
